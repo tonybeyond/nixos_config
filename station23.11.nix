@@ -78,7 +78,7 @@
 
 # enable virtualization
   virtualisation.vmware.host.enable = true;
-
+  
   # Define a user account. Don't forget to set a password with ‘passwd’.
   programs.fish.enable = true;
   users.users.nixy = {
@@ -128,6 +128,13 @@
    btop
    vlc
   ];
+
+  # garbage collector to clean up older generations
+  nix.gc = {
+  automatic = true;
+  dates = "weekly";
+  options = "--delete-older-than 15d";
+  };
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
