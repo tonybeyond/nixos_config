@@ -77,6 +77,11 @@
   sound.enable = true;
   hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
+  
+# enable openCL
+hardware.opengl.extraPackages = with pkgs; [
+  rocmPackages.clr.icd
+];
 
 # enable virtualization
   virtualisation.vmware.host.enable = true;
