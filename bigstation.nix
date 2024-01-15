@@ -46,7 +46,6 @@
        enable = true;
        displayManager.gdm.enable = true;
        desktopManager.gnome.enable = true;
-       videoDrivers = [ "amdgpu" ];
        layout = "ch";
        xkbVariant = "fr";
      };
