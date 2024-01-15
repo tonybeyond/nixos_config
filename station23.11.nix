@@ -13,6 +13,7 @@
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.initrd.kernelModules = [ "amdgpu" ];
 
   networking.hostName = "minipc"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -44,6 +45,7 @@
        enable = true;
        displayManager.gdm.enable = true;
        desktopManager.gnome.enable = true;
+       videoDrivers = [ "amdgpu" ];
        layout = "ch";
        xkbVariant = "fr";
      };
@@ -88,6 +90,7 @@
     shell = pkgs.fish;
     packages = with pkgs; [
       firefox
+      darktable
       brave
       nerdfonts
       gnomeExtensions.pop-shell
