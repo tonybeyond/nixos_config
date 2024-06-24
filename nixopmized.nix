@@ -1,3 +1,7 @@
+# Edit this configuration file to define what should be installed on
+# your system.  Help is available in the configuration.nix(5) man page
+# and in the NixOS manual (accessible by running 'nixos-help').
+
 { config, lib, pkgs, ... }:
 
 {
@@ -10,38 +14,70 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # Kernel modules and parameters
+  # Merge kernel modules
   boot.initrd.kernelModules = [ "amdgpu" "vfio" "vfio_pci" "vfio_iommu_type1" ];
+  # Configure vfio
   boot.kernelModules = [ "kvm" "kvm_amd" ];
   boot.extraModulePackages = [ pkgs.linuxPackages.amdgpu-pro ];
+
+  # Kernel parameters for IOMMU, CPU isolation, and hugepages
   boot.kernelParams = [ 
     "iommu=1" 
     "amd_iommu=on"
     "default_hugepagesz=1G" 
     "hugepagesz=1G" 
-    "hugepages=16"  # Reserving 16GB for hugepages, adjust as needed
-    "isolcpus=8-15,24-31"  # Isolating 8 cores (16 threads) for VM use
+    "hugepages=16"
+    "isolcpus=8-15,24-31"
+    "elevator=none"
   ];
+
+  # Configure VFIO
   boot.extraModprobeConfig = ''
     options kvm ignore_msrs=1
-    options vfio-pci ids=10de:2503,10de:228e  # RTX 3060 IDs, verify these
+    options vfio-pci ids=10de:2503,10de:228e
   '';
 
-  # CPU governor and I/O scheduler
-  powerManagement.cpuFreqGovernor = "performance";
-  boot.kernelParams = boot.kernelParams ++ [ "elevator=none" ];
-
-  # Networking
-  networking.hostName = "biglab";
+  networking.hostName = "biglab"; # Define your hostname.
+  # Enable networking
   networking.networkmanager.enable = true;
 
-  # Time zone and internationalization (unchanged)
-  # ... (keep your existing time and i18n settings)
+  # Set your time zone.
+  time.timeZone = "Europe/Zurich";
 
-  # Services (including X11, audio, and netbird)
+  # Select internationalisation properties.
+  i18n = {
+    defaultLocale = "en_US.UTF-8";
+    supportedLocales = [ "en_US.UTF-8/UTF-8" "fr_CH.UTF-8/UTF-8" ];
+    extraLocaleSettings = {
+      LANGUAGE = "en_US.UTF-8";
+      LC_ALL = "fr_CH.UTF-8";
+    };
+  };
+
+  # services
   services = {
-    # ... (keep your existing service configurations)
-    
+    # Enable the X11 windowing system, Gnome and locales with keyboard mapping
+    xserver = {
+      enable = true;
+      displayManager.gdm.enable = true;
+      desktopManager.gnome.enable = true;
+      videoDrivers = [ "amdgpu" ];
+      layout = "ch";
+      xkbVariant = "fr";
+    };
+    # CUPS to print documents.
+    printing.enable = false;
+    # Enable audio server
+    pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      pulse.enable = true;
+    };
+    # Enable netbird
+    netbird = {
+      enable = true;
+    };
     # Add CPU scheduler for isolated cores
     system76-scheduler = {
       enable = true;
@@ -49,29 +85,109 @@
     };
   };
 
-  # Console keymap (unchanged)
+  # Configure console keymap
   console.keyMap = "fr_CH";
 
-  # Sound and OpenGL (unchanged)
-  # ... (keep your existing sound and OpenGL configurations)
+  # Enable sound with pipewire.
+  sound.enable = true;
+  hardware.pulseaudio.enable = false;
+  security.rtkit.enable = true;
 
-  # User configuration (unchanged)
-  # ... (keep your existing user configurations)
+  # Enable OpenGL
+  hardware.opengl = {
+    enable = true;
+    driSupport = true;
+    driSupport32Bit = true;
+    extraPackages = with pkgs; [
+      rocmPackages.clr.icd
+    ];
+  };
 
-  # Packages (unchanged)
-  # ... (keep your existing package configurations)
+  # Define a user account. Don't forget to set a password with 'passwd'.
+  programs.zsh = {
+    enable = true;
+    enableCompletion = true;
+    ohMyZsh = {
+      enable = true;
+      theme = "robbyrussell";
+      plugins = [ "git" "zsh-autosuggestions" "zsh-syntax-highlighting" "vscode" "fzf" ];
+    };
+  };
 
-  # Looking Glass configuration (unchanged)
-  systemd.tmpfiles.rules = [
-    "f /dev/shm/looking-glass 0660 nixy qemu-libvirtd -"
+  users.defaultUserShell = pkgs.zsh;
+  users.users.nixy = {
+    isNormalUser = true;
+    description = "nixy";
+    extraGroups = [ "networkmanager" "wheel" "libvirtd" "qemu-libvirtd" "disk" "kvm" ];
+    shell = pkgs.zsh;
+    packages = with pkgs; [
+      firefox
+      ungoogled-chromium
+      brave
+      nerdfonts
+      gnomeExtensions.pop-shell
+      vlc
+      obsidian
+      pcloud
+      nextcloud-client
+      vscode
+      hyfetch
+    ];
+  };
+
+  # Allow unfree packages
+  nixpkgs.config.allowUnfree = true;
+
+  # Allow specific packages.
+  nixpkgs.config.permittedInsecurePackages = [
+    "electron-25.9.0"
   ];
 
-  # Garbage collector (unchanged)
-  # ... (keep your existing GC configuration)
+  # List packages installed in system profile.
+  environment.systemPackages = with pkgs; [
+    microcodeAmd
+    neovim
+    neofetch
+    starship
+    alacritty
+    gnome.gnome-tweaks
+    wget
+    curl
+    git
+    bat
+    eza
+    mpv
+    tmux
+    btop
+    vlc
+    zsh
+    fzf
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+    fuse
+    pciutils
+    looking-glass-client
+    parsec-bin
+  ];
 
-  # Virtualization
+  # Add a file for looking-glass to use later.
+  systemd.tmpfiles.rules = [
+      "f /dev/shm/looking-glass 0660 nixy qemu-libvirtd -"
+  ];
+
+  # Garbage collector to clean up older generations
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 15d";
+  };
+
+  # Enable KVM and libvirt
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
+
+  # CPU governor
+  powerManagement.cpuFreqGovernor = "performance";
 
   # Hugepages configuration
   boot.kernel.sysctl = {
@@ -89,7 +205,7 @@
     }
   ];
 
-  # GPU passthrough configuration
+  # Blacklist the NVIDIA driver on the host
   nixpkgs.config.packageOverrides = pkgs: {
     linux_latest = pkgs.linuxPackages_latest.overrideAttrs (old: rec {
       modDirVersion = "5.15.0";
@@ -102,6 +218,11 @@
     });
   };
 
-  # System version
-  system.stateVersion = "24.05";
+  # This value determines the NixOS release from which the default
+  # settings for stateful data, like file locations and database versions
+  # on your system were taken. It's perfectly fine and recommended to leave
+  # this value at the release version of the first install of this system.
+  # Before changing this value read the documentation for this option
+  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
+  system.stateVersion = "24.05"; # Did you read the comment?
 }
