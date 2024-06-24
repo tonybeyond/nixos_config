@@ -78,11 +78,6 @@
     netbird = {
       enable = true;
     };
-    # Add CPU scheduler for isolated cores
-    system76-scheduler = {
-      enable = true;
-      settings.cfsProfiles.performance = "8-15,24-31";
-    };
   };
 
   # Configure console keymap
@@ -218,6 +213,16 @@
     });
   };
 
+  # Set CPU affinity for high-performance tasks
+  systemd.services.high-performance-tasks = {
+    description = "Set CPU affinity for high-performance tasks";
+    serviceConfig = {
+      ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.util-linux}/bin/taskset -pc 8-15,24-31 $$'";
+      Type = "oneshot";
+    };
+    wantedBy = [ "multi-user.target" ];
+  };
+
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It's perfectly fine and recommended to leave
@@ -225,4 +230,6 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "24.05"; # Did you read the comment?
+
+ 
 }
