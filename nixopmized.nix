@@ -50,7 +50,7 @@
     supportedLocales = [ "en_US.UTF-8/UTF-8" "fr_CH.UTF-8/UTF-8" ];
     extraLocaleSettings = {
       LANGUAGE = "en_US.UTF-8";
-q      LC_ALL = "fr_CH.UTF-8";
+      LC_ALL = "fr_CH.UTF-8";
     };
   };
 
