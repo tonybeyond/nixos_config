@@ -78,6 +78,13 @@
     netbird = {
       enable = true;
     };
+    # Enable QEMU Guest Agent
+    qemuGuest = {
+      enable = true;
+      package = pkgs.qemu_full;
+      vsockEnable = true;
+      timeSync = true;
+    };
   };
 
   # Configure console keymap
@@ -216,11 +223,12 @@
   # Set CPU affinity for high-performance tasks
   systemd.services.high-performance-tasks = {
     description = "Set CPU affinity for high-performance tasks";
-    serviceConfig = {
-      ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.util-linux}/bin/taskset -pc 8-15,24-31 $$'";
-      Type = "oneshot";
-    };
     wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = "yes";
+      ExecStart = "${pkgs.util-linux}/bin/taskset -pc 8-15,24-31 1";
+    };
   };
 
   # This value determines the NixOS release from which the default
@@ -231,5 +239,5 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "24.05"; # Did you read the comment?
 
- 
+  # System is running NixOS 24.05, but stateVersion is kept at original install version
 }
